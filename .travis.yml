@@ -1,0 +1,46 @@
+# Config file for automatic testing at travis-ci.org
+dist: xenial
+language: python
+env:
+  global:
+    - COVERALLS_PARALLEL=true
+matrix:
+  fast_finish: true
+  include:
+    - name: Check code style
+      python: 3.7
+      env: TOXENV="run-blackcheck,run-isortcheck"
+    - name: Docs
+      python: 3.7
+      env:
+        - DOCS="true"
+        # Doctr deploy key
+        - secure: "AWeSJoFcxEJPde2+KommqQoK2EUQeXs8GLZpbA9hA7pAF9oBJBWyuy/R3gab2S3OGQO+2gy/qKSEeF1y/C2qkdfyLXx9cWv1Yd0qVuRGllhEY5YcbCGoIEJiM2eGO/JveV0SVs+e/78Hs1q9oTkODz35K/5wxUfqQEr24SYQwpjOKvCPS5W2JdKHQDaSsL3V4FI27393P2wZeNxYTVOPgDffEEhK9fgYetuncflSg5SGyT7B0gTcIdAl7ZFG9XwIq7aJ3gk/p3EKj6zP4+2U73gonuEvwcl0e4F1L09xCVHIIstxSjEyjKidwE8rx+6EUJiFJlsBNSawMCdrzpuU4N9clBD1uTtlRoZdcbWnk63u2WDXEb6WSDgQDhZ+F4WpD6qA+E4JRiBm/EmEIBh8Lip/GZSCjIHujXSJptKzqk6UL83nSoEKmC/pNnpsLpBdCalWcSCP8V703Qk+QnUMI62g/opRllliy8nzcyDL15lO+mrySNlMRDyTSVn9RhFhgySMDNHc4OGYkqfq99BW8mWXpXZBUVFR+9t3dKoLG6pdOY8mtZxeQf6nqB1K3LsoanQGhTaxPvteMeBpXvuqi1S+cZ1OzDOGZAAeHf5pMhIKw1suYFGhyegQMTwRVzcWlepHxfAy6q26+CzWmtRF6dfQQJzqs6wXheZsVj0vTAc="
+      addons:
+        apt_packages:
+    - name: Python 3.7
+      python: 3.7
+      env: TOXENV=py37-test
+    - name: Python 3.8
+      python: 3.8
+      env: TOXENV=py38-test
+
+install:
+  # any failure stops the build
+  - set -e
+  - pip install tox
+  - pip freeze
+  - printenv
+script:
+  # any failure stops testing immediately
+  - set -e
+  - |
+    if [[ "${DOCS}" == "true" ]]; then
+      source .travis/doctr_build.sh
+    else
+      tox -e $TOXENV
+    fi
+  - echo "DONE"
+after_success:
+  # coveralls is prone to random failures (which would fail the Travis job), so we'll handle those silently
+  - if [[ "${TOXENV}" =~ test ]]; then tox -e $(echo "${TOXENV}" | sed s/test/runcmd/) -- coveralls -v || echo "Cannot upload to coveralls"; fi
